@@ -1,5 +1,6 @@
 package com.example.jiashuai.myapplicationrxjava1;
 
+import android.database.CursorJoiner;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -22,14 +23,17 @@ import rx.schedulers.Schedulers;
  */
 
 public class RxTest_Operator {
+
     public static void main(String[] agr) {
         RxTest_Operator rx = new RxTest_Operator();
 //        rx.rx_from();
+//        rx.customType();
 //        rx.rx_defer();
 //        rx.rx_interval();
 //        rx.commonOperator();
 //        rx.rx_lift();
-        rx.rx_compose();
+//        rx.rx_compose();
+
 
     }
 
@@ -46,6 +50,33 @@ public class RxTest_Operator {
 
         Observable observable = Observable.from(list);
         observable.subscribe(System.out::println).unsubscribe();
+    }
+    /**
+     * 发送自定义类型
+     */
+    public void customType() {
+        Observable.from(CustomType.values()).subscribe(new Action1<CustomType>() {
+            @Override
+            public void call(CustomType customType) {
+                System.out.println(customType.getValue());
+            }
+        });
+    }
+
+    enum CustomType {
+        TYPE_HE("hehehe"),
+        TYPE_HI("hi"),
+        TYPE_HELLO("Hello");
+
+        private String value;
+
+        CustomType(String s) {
+            value = s;
+        }
+
+        public String getValue() {
+            return value;
+        }
     }
 
     /**

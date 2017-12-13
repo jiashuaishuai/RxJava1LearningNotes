@@ -7,6 +7,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
 import rx.Subscriber;
@@ -18,6 +19,7 @@ import rx.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
     private TextView my_tv;
+    private TextView my_tv2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,6 +27,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         my_tv = findViewById(R.id.my_tv);
         my_tv.setOnClickListener(v -> rx_scheduler());
+        my_tv2 = findViewById(R.id.my_tv2);
+        my_tv2.setOnClickListener(v -> rx_interva());
+
 
     }
 
@@ -62,5 +67,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void tvShow(String s) {
         my_tv.setText(s);
+    }
+
+
+    private void rx_interva() {
+        Observable.interval(1, TimeUnit.SECONDS).observeOn(AndroidSchedulers.mainThread()).subscribe(this::tv2Show);
+    }
+
+    private void tv2Show(long l) {
+        my_tv2.setText(l + "秒");
     }
 }

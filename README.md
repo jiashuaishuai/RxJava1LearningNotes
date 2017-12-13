@@ -45,11 +45,19 @@ Observable.create(new Observable.OnSubscribe<String>(){
         });
     Observable.defer(() -> Observable.just("Hell", "Hi"));//lambda表达式简写
     
-    /**
-    *创建一个按照固定事件间隔发射整数序列的Observable，可作用定时器；take限定三十个
-    *有个坑看看这个链接：interval的坑http://blog.csdn.net/u011033906/article/details/59753576
-    **/
-    Observable.interval(1, TimeUnit.SECONDS, Schedulers.trampoline()).take(30);
+        /**
+        *{@code interval} operates by default on the {@code computation} {@link Scheduler}
+        *{代码间隔}默认情况下在“代码计算”连接程序调度程序}上运行。简单说就是子线程
+        **/
+        Observable.interval(1,TimeUnit.SECONDS);
+        
+        
+        /**
+        *修改线程调度器Schedulers.trampoline()  下文有解
+        *创建一个按照固定事件间隔发射整数序列的Observable，可作用定时器；
+        *take限定三十个
+        **/
+        Observable.interval(1, TimeUnit.SECONDS, Schedulers.trampoline()).take(30);
 
 ```
 > interval的坑：http://blog.csdn.net/u011033906/article/details/59753576
@@ -292,11 +300,14 @@ class LiftAllTransformer implements Observable.Transformer<String,Integer>{
 ### Scheduler 的 API
 
 * **AndroidSchedulers.mainThread：** 它指定的操作将在Android主线程运行，
-* **Schedulers.newThread：** 总是启用新县城，并且在新线程中执行操作
+* **Schedulers.newThread：** 总是启用新线程，并且在新线程中执行操作
 * **Schedulers.io：** I/O操作所使用的Scheduler和Schedulers.newThread行为和模式差不多，区别io内部实现了一个无数量上限的线程池，重用空闲线程，比newThread()更有效率，常用
-* Schedulers.immediate()：直接在当前线程运行，相当于不指定线程，默认的
 * Schedulers.computation：计算所使用的Scheduler。指：CPU密集型计算，即不会被I/O等操作限制性能的操作，如：图形计算。这个Scheduler使用的固定线程池，大小为CPU内核数，建议：不要把I/O操作，会浪费CPU
 
+* Schedulers.immediate()：直接在当前main线程运行，相当于不指定线程，默认的
+* Schedulers.trampoline()：不会立即执行，当其他排队任务介绍时才执行，当然TrampolineScheduler运行在当前main线程。
+
+>Schedulers.trampoline()与Schedulers.immediate()区别参见：http://blog.csdn.net/u011033906/article/details/59753576
 
 ### subscribeOn()
 指定subscribe() 所发生的线程，即 Observable.OnSubscribe 被激活时所处的线程。或者叫做事件产生的线程;
