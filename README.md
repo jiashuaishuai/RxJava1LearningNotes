@@ -1,7 +1,7 @@
 # RxJava1LearningNotes
 Rxjava1的学习笔记
 
-##RxJava是什么
+## RxJava是什么
 
 > a library for composing asynchronous and event-based programs using observable sequences for the Java VM
 解释：一个对于构成使用的Java虚拟机观察序列异步和基于事件的程序库
@@ -10,7 +10,7 @@ Rxjava1的学习笔记
 
 **RxAndroid开源地址** https://github.com/ReactiveX/RxAndroid
 
-##概念关键字
+## 概念关键字
 
 * **Observable:** 发射源，译“可观察的”，观察者模式中称为“被观察者”或者“可观察对象”；
 * **Observer:** 接受源，译“观察者”，观察者模式中称为“观察者”，可以接受Observable，Subject发射的数据
@@ -21,7 +21,7 @@ Rxjava1的学习笔记
 * Subject：先放着不太懂 http://www.jianshu.com/p/240f1c8ebf9d 
 
 
-##Observable创建
+## Observable创建
 多种创建方式这里举例常用：
 
 ```java
@@ -56,7 +56,7 @@ Observable.create(new Observable.OnSubscribe<String>(){
 ```
 > interval的坑：http://blog.csdn.net/u011033906/article/details/59753576
 
-##Subscriber的创建 RxJava1.x
+## Subscriber的创建 RxJava1.x
 
 ```java
 /**
@@ -134,7 +134,7 @@ observable.subscribe(new Subscriber<Integer>() {
 如果对准备工作的线程有要求(如：弹出一个现实进度的对话框，这必须在主线程执行)呢么onStart就不适用了，因为它总是在subscribe所发生的线程调用，而不能指定线程。要在指定线程来做准备工作，可以使用**doOnSubscribe()**方法，下面会讲。
 
 
-##操作符(Operators)
+## 操作符(Operators)
 ```java
     /**
      * 常用操作符
@@ -207,8 +207,8 @@ lift它生成了一个新的 Observable 并返回，而且创建新 Observable �
 
 **简单的说：在 Observable 执行了 lift(Operator) 方法之后，会返回一个新的 Observable，这个新的 Observable 会像一个代理一样，负责接收原始的 Observable 发出的事件，并在处理后发送给 Subscriber。**
 
-###思维理解图
-![](https://github.com/jiashuaishuai/RxJava1LearningNotes/tree/master/media/15130620756024/15131361430879.jpg)
+### 思维理解图
+![](https://github.com/jiashuaishuai/RxJava1LearningNotes/tree/master/media/15131361430879.jpg)
 
 ![](https://github.com/jiashuaishuai/RxJava1LearningNotes/tree/master/media/15130620756024/15131338578373.gif)
 
