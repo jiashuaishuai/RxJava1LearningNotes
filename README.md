@@ -428,6 +428,234 @@ Observable.create(onSubscribe)
 
 （2）http://gank.io/post/560e15be2dca930e00da1083
 
+## 中文文档
+https://mcxiaoke.gitbooks.io/rxdocs/content/Observables.html
+
+
+# 背压（Backpressure）
+
+## 场景
+RxJava观察者模式架构中，当被观察者（Observable）和观察者（Subscriber）处于不同的线程环境中时，由于各自的工作量不一样，导致他们产生事件和处理事件的速度不一样，会出现以下两种结果：
+
+1. 被观察者生产速度慢，观察者处理速度快。那么观察者就会等着被观察者发送事件。
+2. 被观察者生产速度快，观察者处理速度慢。那么事件就会堆积起来，最终会导致oom。
+
+实例1：
+这是RxJava中interva的例子
+
+```java
+private void rx_interva() {
+        Observable.interval(1, TimeUnit.SECONDS).observeOn(AndroidSchedulers.mainThread()).subscribe(this::tv2Show);
+    }
+    
+```
+实例2：
+崩溃场景演示
+抛出异常：`Caused by: rx.exceptions.MissingBackpressureException`
+
+```java
+   Observable.interval(1, TimeUnit.MILLISECONDS)
+                .doOnNext(new Action1<Long>() {
+                    @Override
+                    public void call(Long aLong) {
+                        System.out.println(Thread.currentThread().getName() + ":   " + aLong);
+                    }
+                })
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(Schedulers.newThread())
+                .subscribe(new Action1<Long>() {
+                    @Override
+                    public void call(Long aLong) {
+                        try {
+                            Thread.sleep(3000);
+                            System.out.println(Thread.currentThread().getName() + ":   " + aLong);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+                
+                //or
+                
+                
+                //被观察者在主线程中，每1ms发送一个事件
+        Observable.interval(1, TimeUnit.MILLISECONDS)
+                .subscribeOn(Schedulers.newThread())
+                //将观察者的工作放在新线程环境中
+                .observeOn(Schedulers.newThread())
+                //观察者处理每1000ms才处理一个事件
+                .subscribe(new Action1<Long>() {
+                    @Override
+                    public void call(Long aLong) {
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        Log.w("TAG","---->"+aLong);
+                    }
+                }); 
+                
+```
+
+## 背压概念
+### 定义：
+**背压是指在异步场景中，被观察者（Observable）发送事件速度远快与观察者（Subscriber）的处理速度的情况下，一种告诉上游的被观察者降低发送速度的策略。**
+
+* **背压策略的前提：** 是**异步环境** 被观察者和观察者处于不同的线程中。
+* 背压并不是一个操作符，他只是一种**控制事件流速的策略** 。
+
+## 背压原理
+
+### 响应式拉取（reactive pull）
+RxJava观察者模型中，被观察者(Observable)是主动的推送数据给观察者(Subscriber)，观察者(Subscriber)是被动接收的。
+而响应式拉取则反过来，**观察者（Subscriber）主动从被观察者（Observable）哪里去拉取数据，而被观察者（Observable）成为被动的等待通知再发送数据** 
+
+思维导图：
+![](https://github.com/jiashuaishuai/RxJava1LearningNotes/blob/master/media/15132337030806.png)
+
+观察者可以根据自身情况按需拉取数据，而不是被动接收（也就相当于告诉上游观察者吧速度慢下来），最终实现了上游被观察者发送事件的速度控制，实现了背压策略
+
+### request()
+
+```java
+//被观察者将产生100000个事件
+Observable observable=Observable.range(1,100000);
+class MySubscriber extends Subscriber<T> {
+    @Override
+    public void onStart() {
+    //一定要在onStart中通知被观察者先发送一个事件
+      request(1);
+    }
+ 
+    @Override
+    public void onCompleted() {
+        ...
+    }
+ 
+    @Override
+    public void onError(Throwable e) {
+        ...
+    }
+ 
+    @Override
+    public void onNext(T n) {
+        ...
+        ...
+        //处理完毕之后，在通知被观察者发送下一个事件
+        request(1);
+    }
+}
+
+observable.observeOn(Schedulers.newThread())
+            .subscribe(MySubscriber);
+```
+
+在代码中，**在onStar()中调用request(1)** ，通知Observabl先发送一个事件，**然后在onNext()中处理完事件，再次调用request(1)(注意：处理完事件后最后调用request)** ，通知Observable发送下一个事件；**调用quest(Long.MAX_VALUE)，可以取消这种backpressure策略**。
+
+
+## 不支持背压的Observable流速控制
+
+### 过滤
+
+相关类似的操作符：Sample，ThrottleFirst....
+以sample为例:
+
+```java
+Observable.interval(1, TimeUnit.MILLISECONDS)
+
+                .observeOn(Schedulers.newThread())
+                //这个操作符简单理解就是每隔200ms发送里时间点最近那个事件，
+                //其他的事件浪费掉
+                  .sample(200,TimeUnit.MILLISECONDS)
+                  .subscribe(new Action1<Long>() {
+                      @Override
+                      public void call(Long aLong) {
+                          try {
+                              Thread.sleep(200);
+                          } catch (InterruptedException e) {
+                              e.printStackTrace();
+                          }
+                          Log.w("TAG","---->"+aLong);
+                      }
+                  });
+
+```
+### 缓存
+相关类似的操作符：buffer，window...
+以buffer为例:
+
+```java
+Observable.interval(1, TimeUnit.MILLISECONDS)
+
+                .observeOn(Schedulers.newThread())
+                //这个操作符简单理解就是把100毫秒内的事件打包成list发送
+                .buffer(100,TimeUnit.MILLISECONDS)
+                  .subscribe(new Action1<List<Long>>() {
+                      @Override
+                      public void call(List<Long> aLong) {
+                          try {
+                              Thread.sleep(1000);
+                          } catch (InterruptedException e) {
+                              e.printStackTrace();
+                          }
+                          Log.w("TAG","---->"+aLong.size());
+                      }
+                  });
+
+
+```
+
+
+### onBackpressurebuffer 、onBackpressureDrop。
+
+使用了这两种操作符，可以让原本不支持背压的Observable“支持”背压。
+
+* onBackpressurebuffer：把observable发送出来的事件做缓存，当request方法被调用的时候，给下层流发送一个item(如果给这个缓存区设置了大小，那么超过了这个大小就会抛出异常)。
+* onBackpressureDrop：将observable发送的事件抛弃掉，直到subscriber再次调用request（n）方法的时候，就发送给它这之后的n个事件。
+
+
+onBackpressureDrop例子：
+
+```java
+Observable.interval(1, TimeUnit.MILLISECONDS)
+                .onBackpressureDrop()
+                .observeOn(Schedulers.newThread())
+               .subscribe(new Subscriber<Long>() {
+
+                    @Override
+                    public void onStart() {
+                        Log.w("TAG","start");
+//                        request(1);
+                    }
+
+                    @Override
+                      public void onCompleted() {
+
+                      }
+                      @Override
+                      public void onError(Throwable e) {
+                            Log.e("ERROR",e.toString());
+                      }
+
+                      @Override
+                      public void onNext(Long aLong) {
+                          Log.w("TAG","---->"+aLong);
+                          try {
+                              Thread.sleep(100);
+                          } catch (InterruptedException e) {
+                              e.printStackTrace();
+                          }
+                      }
+                  });
+
+```
+
+## 参考：
+http://www.jianshu.com/p/2c4799fa91a4
+
+
+
 
 [TOC]
 

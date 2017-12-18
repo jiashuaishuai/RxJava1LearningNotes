@@ -20,5 +20,17 @@
         android:layout_height="60dp"
         android:gravity="center"
         android:text="interva" />
+    <TextView
+        android:id="@+id/my_tv3"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:gravity="center"
+        android:text="backpressure error" />
+    <TextView
+        android:id="@+id/my_tv4"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:gravity="center"
+        android:text="流速控制 from" />
 
 </LinearLayout>
