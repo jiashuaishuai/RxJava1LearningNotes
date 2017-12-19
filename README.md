@@ -1,7 +1,7 @@
 # Rxjava1的学习笔记
 
 ## RxJava是什么
-
+1.x版本截止到2017年6月1号不会增加新的操作符，仅仅修复Bug，截止到2018年3月31号完全停止开发维护。
 > a library for composing asynchronous and event-based programs using observable sequences for the Java VM
 解释：一个对于构成使用的Java虚拟机观察序列异步和基于事件的程序库
 
